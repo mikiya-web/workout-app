@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+# mainへのpush時と、手動実行時に動く
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+# コードの読み取りと、Pagesへの公開に必要な権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開処理を同時に複数実行しない
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # リポジトリのコードを取得する
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Node.jsを準備する
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+
+      # lockファイルに従ってライブラリをインストールする
+      - name: Install dependencies
+        run: npm ci
+
+      # コードのルールをチェックする
+      - name: Lint
+        run: npm run lint
+
+      # 型チェックと公開用ファイルの生成
+      - name: Build
+        run: npm run build
+
+      # GitHub Pagesを準備する
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      # 生成されたdistを公開用に渡す
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: ./dist
+
+      # GitHub Pagesに公開する
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
+        

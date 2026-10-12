@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>workout-app</title>
+
+    <!-- 検索結果などで使われるアプリの説明 -->
+    <meta
+      name="description"
+      content="種目・重量・回数を記録し、トレーニング量を振り返れる筋トレ管理アプリ。独自種目の追加や、その日の体重を使ったボリューム計算に対応しています。"
+    />
+
+    <!-- ブラウザのタブに表示する名前 -->
+    <title>筋トレ管理アプリ</title>
   </head>
   <body>
+    <!-- Reactの画面を表示する場所 -->
     <div id="root"></div>
+
+    <!-- アプリの起動用ファイル。公開用のパスはViteが変換する -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
