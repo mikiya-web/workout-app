@@ -1,0 +1,522 @@
+/* アプリ全体の表示幅と余白 */
+#root {
+  width: 100%;
+  max-width: 960px;
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+/* アプリ名 */
+.app-title {
+  margin: 0 0 20px;
+  font-size: 28px;
+  line-height: 1.4;
+}
+
+/* 画面切り替えリンクを横並びにする */
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+/* ナビの各リンクを、押しやすい大きさにする */
+.app-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+
+  color: #334155;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* マウスを重ねたときの表示 */
+.app-nav a:hover {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+}
+
+/* 各画面内の見出し */
+h2 {
+  margin: 24px 0 16px;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+/* スマホでは外側の余白と見出しを少し小さくする */
+@media (max-width: 600px) {
+  #root {
+    padding: 20px 16px 40px;
+  }
+
+  .app-title {
+    font-size: 24px;
+  }
+
+  .app-nav {
+    margin-bottom: 24px;
+  }
+
+  .app-nav a {
+    padding: 10px 12px;
+  }
+}
+
+/* フォーム全体を白い枠で囲み、項目を縦に並べる */
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+/* フォーム内の見出しは、親のgapで間隔を管理する */
+.form-panel>h2 {
+  margin: 0;
+}
+
+/* 項目名と入力欄を縦に並べる */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* 入力欄の大きさと見た目をそろえる */
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: #1f2937;
+  background-color: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  font-weight: 400;
+}
+
+/* メモ欄は縦方向にサイズ変更できるようにする */
+.form-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* チェックボックスと説明は横並びにする */
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* チェックボックスを押しやすいサイズにする */
+.checkbox-field input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #1d4ed8;
+}
+
+/* エラー文は色と背景で区別する */
+.form-error {
+  margin: 0;
+  padding: 12px;
+  color: #991b1b;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* 保存・キャンセルを並べ、狭い画面では折り返す */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ボタン共通の大きさ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* フォーム直下の分類追加ボタンは、横幅いっぱいに伸ばさない */
+.form-panel>.button {
+  align-self: flex-start;
+}
+
+/* 保存など、主な操作のボタン */
+.button-primary {
+  color: #ffffff;
+  background-color: #1d4ed8;
+}
+
+.button-primary:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+
+/* 分類追加・キャンセルなどのボタン */
+.button-secondary {
+  color: #334155;
+  background-color: #ffffff;
+  border-color: #94a3b8;
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: #f1f5f9;
+}
+
+/* 操作できないボタンの表示 */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* スマホではフォーム内の余白を少し小さくする */
+@media (max-width: 600px) {
+  .form-panel {
+    padding: 16px;
+  }
+}
+
+/* 検索欄：PCでは2列、スマホでは1列にする */
+.filter-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+/* 種目一覧の点と標準の余白をなくし、各種目の間隔を付ける */
+.exercise-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 1種目ごとの枠 */
+.exercise-card {
+  min-width: 0;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+/* 種目名：長い名前でも枠内で折り返す */
+.exercise-card-name {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* 部位・分類は、種目名より控えめに表示する */
+.exercise-card-meta {
+  margin: 0 0 16px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+/* 削除ボタン */
+.button-danger {
+  color: #b91c1c;
+  background-color: #ffffff;
+  border-color: #fca5a5;
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+/* 種目がない場合・検索結果がない場合の案内 */
+.empty-message {
+  margin: 0;
+  padding: 24px;
+  color: #475569;
+  text-align: center;
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+@media (max-width: 600px) {
+  .filter-panel {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .exercise-card {
+    padding: 16px;
+  }
+}
+
+/* 入力できない項目を見分けられるようにする */
+.form-field input:disabled,
+.form-field select:disabled,
+.form-field textarea:disabled {
+  color: #64748b;
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+}
+
+/* 自重計算などの補足案内 */
+.form-note {
+  margin: 0;
+  padding: 12px 16px;
+  color: #1e40af;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+/* セット同士の間隔 */
+.set-list {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 1セットの入力欄を囲む枠 */
+.set-card {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+/* セット番号 */
+.set-card-title {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+/* 重量・回数を同じ幅で横並びにする */
+.set-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* セット削除ボタンを入力欄の下に配置する */
+.set-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* 特に狭い画面では重量・回数も縦に並べる */
+@media (max-width: 380px) {
+  .set-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 記録同士の間隔 */
+.record-list {
+  display: grid;
+  gap: 16px;
+}
+
+.record-entry {
+  min-width: 0;
+}
+
+/* 日付と、その日の体重 */
+.record-date-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+/* 日付が変わるところは、同じ日の記録同士より間隔を広げる */
+.record-entry:not(:first-child) > .record-date-header {
+  margin-top: 16px;
+}
+
+.record-date {
+  margin: 0;
+  font-size: 20px;
+}
+
+.record-body-weight {
+  margin: 0;
+  color: #475569;
+}
+
+/* 1記録ごとの枠 */
+.record-card {
+  min-width: 0;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.record-name {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* 自重記録の重量に関する補足 */
+.record-weight-note {
+  margin: 0 0 12px;
+  color: #475569;
+  font-size: 14px;
+}
+
+/* セットの一覧 */
+.record-set-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+/* セット番号と重量・回数を左右に配置する */
+.record-set {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 10px 12px;
+  background-color: #f8fafc;
+  border-radius: 6px;
+}
+
+.record-set-number {
+  color: #64748b;
+}
+
+.record-set-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* メモの改行を表示に反映し、長い文字列も折り返す */
+.record-memo {
+  margin: 0 0 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.record-volume {
+  margin: 0 0 20px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .record-card {
+    padding: 16px;
+  }
+}
+
+/* 記録検索は、同じ幅の2列に並べる */
+.record-filter-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 解除ボタンの行は、検索欄の横幅全体を使う */
+.record-filter-actions {
+  grid-column: 1 / -1;
+}
+
+/* スマホでは検索項目を1列に並べる */
+@media (max-width: 600px) {
+  .record-filter-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 入力方法の説明を囲み、下のフォームとの間隔を取る */
+.usage-guide {
+  margin-bottom: 20px;
+  color: #334155;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* 説明の開閉部分を押しやすくする */
+.usage-guide > summary {
+  padding: 16px 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.usage-guide > summary:hover {
+  color: #1d4ed8;
+}
+
+/* 開いたとき、見出しと説明を線で区切る */
+.usage-guide[open] > summary {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* 説明文の余白と、項目同士の間隔 */
+.usage-guide > ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 20px 20px 40px;
+}
+
+@media (max-width: 600px) {
+  .usage-guide > summary {
+    padding: 16px;
+  }
+
+  .usage-guide > ul {
+    padding: 16px 16px 16px 36px;
+  }
+}

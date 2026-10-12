@@ -1,0 +1,46 @@
+/* アプリ全体の基本配色と文字 */
+:root {
+  font-family: system-ui, "Segoe UI", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+  background-color: #f3f5f8;
+  color-scheme: light;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 指定した幅にpaddingとborderを含める */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ブラウザ標準の外側の余白をなくす */
+body {
+  margin: 0;
+}
+
+/* 入力欄やボタンにも、全体と同じフォントを使う */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* リンクの基本色 */
+a {
+  color: #1d4ed8;
+}
+
+/* キーボード操作で、選択中の要素を見分けられるようにする */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
