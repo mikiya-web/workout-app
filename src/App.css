@@ -520,3 +520,17 @@ h2 {
     padding: 16px 16px 16px 36px;
   }
 }
+
+/* 日付欄がiPhoneでも親の幅に収まるようにする */
+.form-field input[type="date"] {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+
+  /* ブラウザ標準の外観を解除して、共通のCSSを適用する */
+  -webkit-appearance: none;
+  appearance: none;
+}
