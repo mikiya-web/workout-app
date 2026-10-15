@@ -1,75 +1,150 @@
-# React + TypeScript + Vite
+# 筋トレ管理アプリ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+種目・重量・回数・セット数・日別体重を記録できる筋トレ管理アプリです。
+自分のトレーニングに合わせた種目の登録や、部位・細かい分類による記録の管理ができます。
 
-Currently, two official plugins are available:
+## 公開URL
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+https://mikiya-web.github.io/workout-app/
 
-## React Compiler
+アカウント登録なしで利用できます。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 制作背景
 
-## Expanding the ESLint configuration
+普段の筋トレで使っていた記録アプリでは、新しい種目の登録や、同じ部位の中でさらに細かく分類することができず、不便に感じていました。
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+そこで、自分が行う種目を自由に登録し、部位だけでなく細かい分類でも記録を整理できるアプリを制作しました。
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 主な機能
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 種目・分類の管理
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- 種目の追加・編集・削除
+- 部位と任意の細かい分類の設定
+- 分類の追加
+- 種目名・部位による検索と絞り込み
+- 記録に使われている種目の削除防止
 
+### トレーニング記録
+
+- 記録の追加・編集・削除
+- 複数セットの重量・回数の入力
+- メモの入力
+- 同じ日付・種目の重複記録の防止
+- 日別体重の登録・更新
+- トレーニング記録を追加せず、体重だけを保存
+- 種目名・部位・分類・日付による検索と絞り込み
+- 日付の新しい順での記録表示
+- 通常種目・自重種目のボリューム計算
+
+### データ保存
+
+- localStorageによるブラウザ内への保存
+- 保存データの型・整合性チェック
+- 読み込み失敗時の自動保存・編集の停止
+- 保存失敗時のエラー表示と再試行
+
+## 使い方
+
+1. 「種目管理」で、使用する種目を確認・追加します。
+2. 「記録入力」で、日付・種目・重量・回数などを入力して保存します。
+3. 「記録一覧」で、過去の記録を確認・検索します。
+
+懸垂など、体重を含めてボリュームを計算する種目では、その日の体重も入力します。
+
+## 使用技術
+
+- React
+- TypeScript
+- Vite
+- CSS
+- React Router（HashRouter）
+- localStorage
+- ESLint
+- Git / GitHub
+- GitHub Actions
+- GitHub Pages
+
+## 工夫した点
+
+### 自分のトレーニングに合わせた種目・分類の管理
+
+種目を自由に登録できるようにし、部位に加えて任意の細かい分類を設定できるようにしました。
+分類は部位と紐付け、選択した部位に合う分類を選べるようにしています。
+
+### 自重種目に対応したボリューム計算
+
+通常の種目は、各セットの「重量 × 回数」を合計します。
+
+懸垂などの自重種目は、各セットの「（その日の体重 ＋ 追加重量）× 回数」を合計します。
+
+体重を計算に含めるかどうかは、種目だけでなく記録にも保持しています。
+これにより、種目の設定を変更しても、過去の記録の計算方法が勝手に変わらないようにしました。
+
+### 保存データの検証と保護
+
+localStorageから読み込んだデータについて、JSONとして読み込めるかだけでなく、必要な項目や数値の範囲も確認しています。
+
+また、IDの重複や、記録が参照する種目の存在など、データ同士の整合性も確認しています。
+
+読み込みに失敗した場合は、自動保存と編集を止め、元の保存データを上書きしないようにしています。
+保存に失敗した場合は、エラーを表示し、再試行できるようにしました。
+
+### 画面の分割と状態の管理
+
+記録一覧・記録入力・種目管理の3画面に分けています。
+
+各画面で共有するデータやフォームの状態はAppコンポーネントで管理し、画面を切り替えても状態を保持する構成にしています。
+フォームや一覧の表示はコンポーネントに分割し、propsで必要なデータや処理を渡しています。
+
+### 公開時の確認の自動化
+
+GitHub Actionsでlintとbuildを実行し、GitHub Pagesへ公開しています。
+
+## データ保存について
+
+現在のV1では、データを利用中のブラウザのlocalStorageに保存しています。
+
+- 同じ端末・同じブラウザで利用してください。
+- 別の端末やブラウザにはデータが同期されません。
+- ブラウザのサイトデータを削除すると、記録も削除されます。
+- プライベートブラウズでは、利用終了時にデータが失われる場合があります。
+
+## ローカルでの起動方法
+
+Node.jsとGitがインストールされた環境で、以下を実行します。
+
+```bash
+git clone https://github.com/mikiya-web/workout-app.git
+cd workout-app
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+起動後、ターミナルに表示されるURLをブラウザで開きます。
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### コードのチェック
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run lint
 ```
+
+### ビルド
+
+```bash
+npm run build
+```
+
+Windowsでnpmコマンドを実行できない場合は、`npm`を`npm.cmd`に置き換えてください。
+
+## 今後の予定
+
+V2では、現在の機能を引き継ぎながら、Supabaseによる認証・データベース保存を追加する予定です。
+
+- アカウント登録・ログイン・ログアウト
+- ユーザーごとのデータ管理とアクセス制限
+- 同じアカウントでのスマホ・PC間のデータ共有
+- V1のlocalStorageデータの引き継ぎ
+- 通信中・通信失敗時の表示と操作への対応
+
+これらは今後の実装予定で、現在のV1には含まれていません。
