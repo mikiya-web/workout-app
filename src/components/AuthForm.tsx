@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { supabase } from "../lib/supabase";
+import PasswordResetRequest from "./PasswordResetRequest";
 
 type AuthMode = "login" | "signup";
 
@@ -11,9 +12,16 @@ function AuthForm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
-
-    // stateの画面反映を待たず、連続した送信を防ぐ
+    const [showPasswordReset, setShowPasswordReset] = useState(false);
     const submittingRef = useRef(false);
+
+    if (showPasswordReset) {
+        return (
+            <PasswordResetRequest
+                onBack={() => setShowPasswordReset(false)}
+            />
+        );
+    }
 
     function handleChangeMode() {
         if (submittingRef.current) {
@@ -163,6 +171,19 @@ function AuthForm() {
                             ? "新規登録はこちら"
                             : "ログインに戻る"}
                     </button>
+                    {mode === "login" && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setPassword("");
+                                setError("");
+                                setMessage("");
+                                setShowPasswordReset(true);
+                            }}
+                        >
+                            パスワードを忘れた方
+                        </button>
+                    )}
                 </fieldset>
             </form>
 
