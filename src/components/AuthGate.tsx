@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import AuthForm from "./AuthForm";
+import PasswordResetForm from "./PasswordResetForm";
 
 type AuthState =
   | { status: "loading" }
@@ -14,6 +15,10 @@ function AuthGate() {
   });
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [isRecovering, setIsRecovering] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("auth") === "recovery";
+  });
 
   useEffect(() => {
     let active = true;
@@ -28,6 +33,11 @@ function AuthGate() {
         }
 
         authChanged = true;
+
+        if (event === "PASSWORD_RECOVERY") {
+          setIsRecovering(true);
+        }
+
         setAuthState({ status: "ready", session });
       }
     );
@@ -98,6 +108,19 @@ function AuthGate() {
     }
   }
 
+  function handleFinishRecovery() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("auth");
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      url.href
+    );
+
+    setIsRecovering(false);
+  }
+
   if (authState.status === "loading") {
     return <p role="status">ログイン状態を確認しています。</p>;
   }
@@ -109,6 +132,34 @@ function AuthGate() {
         <button type="button" onClick={() => window.location.reload()}>
           再読み込み
         </button>
+      </main>
+    );
+  }
+
+  if (isRecovering) {
+    return (
+      <main>
+        <h1>筋トレ管理アプリ</h1>
+
+        {authState.session === null ? (
+          <section>
+            <p role="alert">
+              再設定に必要なログイン状態を確認できませんでした。
+              リンクの期限切れや、別のブラウザで開いた可能性があります。
+              再設定メールをもう一度リクエストしてください。
+            </p>
+            <button
+              type="button"
+              onClick={handleFinishRecovery}
+            >
+              ログイン画面へ戻る
+            </button>
+          </section>
+        ) : (
+          <PasswordResetForm
+            onComplete={handleFinishRecovery}
+          />
+        )}
       </main>
     );
   }
