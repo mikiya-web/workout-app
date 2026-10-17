@@ -12,5 +12,11 @@ if (!supabaseUrl || !supabasePublishableKey) {
 
 export const supabase = createClient(
   supabaseUrl,
-  supabasePublishableKey
+  supabasePublishableKey,
+  {
+    auth: {
+      flowType: "pkce",
+      detectSessionInUrl: true,
+    },
+  }
 );
