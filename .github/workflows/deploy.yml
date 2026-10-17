@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 手動実行を含め、main以外では公開処理を実行しない
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     environment:
