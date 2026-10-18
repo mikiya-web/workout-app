@@ -387,3 +387,134 @@ export async function loadWorkoutRecords(
 
   return records;
 }
+
+// 新規保存の情報に、編集開始時の記録の更新番号を加える
+export type UpdateWorkoutRecordInput = CreateWorkoutRecordInput & {
+  expectedRevision: number;
+};
+
+export async function updateWorkoutRecord(
+  input: UpdateWorkoutRecordInput,
+  userId: string
+): Promise<WorkoutRecordSaveResult> {
+  if (
+    !isNonEmptyString(input.id) ||
+    !isNonEmptyString(input.exerciseId)
+  ) {
+    throw new Error("記録IDと種目IDが必要です。");
+  }
+
+  if (!isValidDailyInfoDate(input.date)) {
+    throw new Error("実在する正しい日付を選んでください。");
+  }
+
+  if (
+    !isPositiveInteger(input.expectedRevision) ||
+    !isPositiveInteger(input.expectedExerciseRevision)
+  ) {
+    throw new Error("記録または種目の更新番号が正しくありません。");
+  }
+
+  if (
+    !Number.isInteger(input.expectedDailyRevision) ||
+    input.expectedDailyRevision < 0 ||
+    input.expectedDailyRevision > 2147483647
+  ) {
+    throw new Error("体重の更新番号が正しくありません。");
+  }
+
+  if (
+    input.bodyWeight !== null &&
+    (!Number.isFinite(input.bodyWeight) || input.bodyWeight <= 0)
+  ) {
+    throw new Error("体重は0より大きい数値で入力してください。");
+  }
+
+  if (input.sets.length < 1) {
+    throw new Error("最低1セット必要です。");
+  }
+
+  const seenIds = new Set<string>();
+
+  for (const set of input.sets) {
+    if (
+      !isNonEmptyString(set.id) ||
+      seenIds.has(set.id) ||
+      !Number.isFinite(set.weight) ||
+      set.weight < 0 ||
+      !isPositiveInteger(set.reps)
+    ) {
+      throw new Error("セットのID・重量・回数を確認してください。");
+    }
+
+    seenIds.add(set.id);
+  }
+
+  const { data, error } = await supabase.rpc(
+    "update_workout_record",
+    {
+      p_id: input.id,
+      p_expected_revision: input.expectedRevision,
+      p_date: input.date,
+      p_exercise_id: input.exerciseId,
+      p_expected_exercise_revision: input.expectedExerciseRevision,
+      p_memo: input.memo,
+      p_sets: input.sets.map((set) => ({
+        id: set.id,
+        weight: set.weight,
+        reps: set.reps,
+      })),
+      p_body_weight: input.bodyWeight,
+      p_expected_daily_revision: input.expectedDailyRevision,
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!isObject(data)) {
+    throw new Error("記録の更新結果が正しくありません。");
+  }
+
+  const record = parseWorkoutRecord(data.record, data.sets, userId);
+  const dailyInfo = parseDailyInfo(data.daily_info, userId);
+
+  // 対象の記録が、送信内容で1回更新されたことを確認する
+  if (
+    record.id !== input.id ||
+    record.revision !== input.expectedRevision + 1 ||
+    record.date !== input.date ||
+    record.exerciseId !== input.exerciseId ||
+    record.memo !== input.memo ||
+    dailyInfo.date !== input.date ||
+    dailyInfo.bodyWeight !== input.bodyWeight ||
+    record.sets.length !== input.sets.length
+  ) {
+    throw new Error(
+      "記録の更新結果が送信内容と一致しません。最新データを確認してください。"
+    );
+  }
+
+  const setsMatch = record.sets.every((set, index) => {
+    const submittedSet = input.sets[index];
+
+    return (
+      set.id === submittedSet.id &&
+      set.weight === submittedSet.weight &&
+      set.reps === submittedSet.reps
+    );
+  });
+
+  if (!setsMatch) {
+    throw new Error(
+      "セットの更新結果が送信内容と一致しません。最新データを確認してください。"
+    );
+  }
+
+  if (record.usesBodyWeight && dailyInfo.bodyWeight === null) {
+    throw new Error("自重記録に必要な体重を確認できません。");
+  }
+
+  return { record, dailyInfo };
+}
