@@ -5,8 +5,8 @@ type ExerciseListProps = {
   filteredExercises: Exercise[];
   bodyPartLabels: Record<BodyPart, string>;
   subCategories: SubCategory[];
-  onDeleteExercise: (id: string) => void;
-  onEditExercise: (exercise: Exercise) => void;
+  onDeleteExercise?: (id: string) => void;
+  onEditExercise?: (exercise: Exercise) => void;
 };
 
 // 絞り込まれた種目を表示し、編集・削除の処理はAppに任せる
@@ -57,23 +57,29 @@ function ExerciseList(props: ExerciseListProps) {
                 {bodyPartLabels[exercise.bodyPart]}/{subCategoryLabel}
               </p>
 
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="button button-secondary"
-                  onClick={() => onEditExercise(exercise)}
-                >
-                  編集
-                </button>
+              {(onEditExercise || onDeleteExercise) && (
+                <div className="form-actions">
+                  {onEditExercise && (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => onEditExercise(exercise)}
+                    >
+                      編集
+                    </button>
+                  )}
 
-                <button
-                  type="button"
-                  className="button button-danger"
-                  onClick={() => onDeleteExercise(exercise.id)}
-                >
-                  削除
-                </button>
-              </div>
+                  {onDeleteExercise && (
+                    <button
+                      type="button"
+                      className="button button-danger"
+                      onClick={() => onDeleteExercise(exercise.id)}
+                    >
+                      削除
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}

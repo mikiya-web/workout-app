@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import {
+  loadExerciseData,
+  type StoredExercise,
+} from "../lib/exerciseData";
+import type { BodyPart, SubCategory } from "../types/workout";
+import ExerciseList from "./ExerciseList";
 
 type UserDataSetupProps = {
   userId: string;
@@ -10,9 +16,20 @@ type SetupState =
   | { status: "error"; message: string }
   | {
       status: "ready";
-      exerciseCount: number;
-      subCategoryCount: number;
+      exercises: StoredExercise[];
+      subCategories: SubCategory[];
     };
+
+const bodyPartLabels: Record<BodyPart, string> = {
+  chest: "胸",
+  back: "背中",
+  shoulders: "肩",
+  biceps: "上腕二頭筋",
+  triceps: "上腕三頭筋",
+  legs: "脚",
+  abs: "腹",
+  other: "その他",
+};
 
 function UserDataSetup({ userId }: UserDataSetupProps) {
   const [setupState, setSetupState] = useState<SetupState>({
@@ -25,7 +42,6 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
 
     async function prepareUserData() {
       try {
-        // DB側の初期登録処理を呼び出す
         const { error: initializeError } =
           await supabase.rpc("initialize_user_data");
 
@@ -39,48 +55,17 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
           );
         }
 
-        // 初期登録が成功してから、本人のデータ件数を取得する
-        const [exercisesResult, subCategoriesResult] =
-          await Promise.all([
-            supabase
-              .from("exercises")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", userId),
-
-            supabase
-              .from("sub_categories")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", userId),
-          ]);
+        const { exercises, subCategories } =
+          await loadExerciseData(userId);
 
         if (!active) {
           return;
         }
 
-        if (exercisesResult.error) {
-          throw new Error(
-            `種目の読み込みに失敗しました：${exercisesResult.error.message}`
-          );
-        }
-
-        if (subCategoriesResult.error) {
-          throw new Error(
-            `分類の読み込みに失敗しました：${subCategoriesResult.error.message}`
-          );
-        }
-
-        // 件数が取得できない場合を「0件」として扱わない
-        if (
-          exercisesResult.count === null ||
-          subCategoriesResult.count === null
-        ) {
-          throw new Error("データの件数を取得できませんでした。");
-        }
-
         setSetupState({
           status: "ready",
-          exerciseCount: exercisesResult.count,
-          subCategoryCount: subCategoriesResult.count,
+          exercises,
+          subCategories,
         });
       } catch (error) {
         if (!active) {
@@ -110,7 +95,7 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
   }
 
   if (setupState.status === "loading") {
-    return <p role="status">データを準備しています。</p>;
+    return <p role="status">データを読み込んでいます。</p>;
   }
 
   if (setupState.status === "error") {
@@ -126,9 +111,16 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
 
   return (
     <section>
-      <h2>登録データ</h2>
-      <p>種目：{setupState.exerciseCount}件</p>
-      <p>分類：{setupState.subCategoryCount}件</p>
+      <h2>種目一覧</h2>
+      <p>種目：{setupState.exercises.length}件</p>
+      <p>分類：{setupState.subCategories.length}件</p>
+
+      <ExerciseList
+        exercises={setupState.exercises}
+        filteredExercises={setupState.exercises}
+        bodyPartLabels={bodyPartLabels}
+        subCategories={setupState.subCategories}
+      />
     </section>
   );
 }
