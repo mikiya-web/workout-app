@@ -9,6 +9,7 @@ import {
   type StoredDailyInfo,
 } from "./dailyInfoData";
 
+
 export type StoredWorkoutRecord = WorkoutRecord & {
   revision: number;
 };
@@ -517,4 +518,39 @@ export async function updateWorkoutRecord(
   }
 
   return { record, dailyInfo };
+}
+
+
+// 本人の記録を更新番号付きで削除し、完了結果を確認する
+export async function deleteWorkoutRecord(
+  record: StoredWorkoutRecord
+): Promise<void> {
+  if (
+    !isNonEmptyString(record.id) ||
+    !isPositiveInteger(record.revision)
+  ) {
+    throw new Error("記録IDまたは更新番号が正しくありません。");
+  }
+
+  const { data, error } = await supabase.rpc(
+    "delete_workout_record",
+    {
+      p_id: record.id,
+      p_expected_revision: record.revision,
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (
+    !isObject(data) ||
+    data.id !== record.id ||
+    data.deleted !== true
+  ) {
+    throw new Error(
+      "記録の削除結果を確認できません。最新データを確認してください。"
+    );
+  }
 }
