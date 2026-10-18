@@ -5,8 +5,8 @@ type RecordListProps = {
   filteredRecords: WorkoutRecord[];
   exercises: Exercise[];
   dailyInfos: DailyInfo[];
-  onDeleteRecord: (id: string) => void;
-  onEditRecord: (record: WorkoutRecord) => void;
+  onDeleteRecord?: (id: string) => void;
+  onEditRecord?: (record: WorkoutRecord) => void;
 };
 
 // 日付順に絞り込まれた記録を表示する
@@ -119,23 +119,29 @@ function RecordList(props: RecordListProps) {
                     : "合計ボリューム：体重未登録のため計算できません"}
                 </p>
 
-                <div className="form-actions">
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    onClick={() => onEditRecord(record)}
-                  >
-                    編集
-                  </button>
+                {(onEditRecord || onDeleteRecord) && (
+                  <div className="form-actions">
+                    {onEditRecord && (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => onEditRecord(record)}
+                      >
+                        編集
+                      </button>
+                    )}
 
-                  <button
-                    type="button"
-                    className="button button-danger"
-                    onClick={() => onDeleteRecord(record.id)}
-                  >
-                    削除
-                  </button>
-                </div>
+                    {onDeleteRecord && (
+                      <button
+                        type="button"
+                        className="button button-danger"
+                        onClick={() => onDeleteRecord(record.id)}
+                      >
+                        削除
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
