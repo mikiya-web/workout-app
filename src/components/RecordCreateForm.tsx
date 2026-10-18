@@ -13,6 +13,7 @@ import {
 } from "../lib/dailyInfoData";
 import {
   createWorkoutRecord,
+  deleteWorkoutRecord,
   loadWorkoutRecords,
   updateWorkoutRecord,
   type CreateWorkoutRecordInput,
@@ -85,6 +86,7 @@ function RecordCreateForm({
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // 保存と削除が同時に動かないようにする
   const savingRef = useRef(false);
   const mountedRef = useRef(false);
   const pendingRecordRef = useRef<PendingRecord | null>(null);
@@ -245,6 +247,90 @@ function RecordCreateForm({
     setRecordError("");
     setSuccessMessage("");
     pendingRecordRef.current = null;
+  }
+
+  async function handleDeleteRecord(id: string) {
+    if (savingRef.current || loadState.status !== "ready") {
+      return;
+    }
+
+    const target = records.find((record) => record.id === id);
+
+    if (target === undefined) {
+      return;
+    }
+
+    const exercise = exercises.find(
+      (item) => item.id === target.exerciseId
+    );
+    const exerciseName = exercise?.name ?? "種目不明";
+
+    const confirmed = window.confirm(
+      `${target.date}の「${exerciseName}」の記録を削除しますか？` +
+        "所属するセットも削除されます。日別体重は残ります。"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    savingRef.current = true;
+    setIsSaving(true);
+    setRecordError("");
+    setSuccessMessage("");
+
+    try {
+      await deleteWorkoutRecord(target);
+
+      if (!mountedRef.current) {
+        return;
+      }
+
+      // 削除完了を確認してから、画面の一覧へ反映する
+      setRecords((prev) =>
+        prev.filter((record) => record.id !== target.id)
+      );
+
+      // 編集中の記録を削除した場合は、追加フォームへ戻す
+      if (editingRecord?.id === target.id) {
+        const dailyInfo = dailyInfos.find(
+          (info) => info.date === recordDate
+        );
+
+        setEditingRecord(null);
+        setRecordExerciseId("");
+        setRecordSets([createEmptySet()]);
+        setRecordMemo("");
+        setRecordBodyWeight(
+          dailyInfo?.bodyWeight == null
+            ? ""
+            : String(dailyInfo.bodyWeight)
+        );
+        setExpectedDailyRevision(dailyInfo?.revision ?? 0);
+        pendingRecordRef.current = null;
+      }
+
+      setSuccessMessage(
+        `${target.date}の「${exerciseName}」の記録を削除しました。`
+      );
+    } catch (error) {
+      if (!mountedRef.current) {
+        return;
+      }
+
+      // 失敗時は一覧や編集中の入力を残す
+      setRecordError(
+        error instanceof Error
+          ? error.message
+          : "記録の削除に失敗しました。"
+      );
+    } finally {
+      savingRef.current = false;
+
+      if (mountedRef.current) {
+        setIsSaving(false);
+      }
+    }
   }
 
   function handleChangeRecordDate(date: string) {
@@ -602,6 +688,9 @@ function RecordCreateForm({
           exercises={exercises}
           dailyInfos={dailyInfos}
           onEditRecord={handleEditRecord}
+          onDeleteRecord={(id) => {
+            void handleDeleteRecord(id);
+          }}
         />
       </fieldset>
     </section>
