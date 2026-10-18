@@ -8,6 +8,7 @@ import type {
 import {
   createExercise,
   createSubCategory,
+  updateExercise,
   type StoredExercise,
 } from "../lib/exerciseData";
 import ExerciseForm from "./ExerciseForm";
@@ -16,8 +17,11 @@ type ExerciseCreateFormProps = {
   userId: string;
   exercises: StoredExercise[];
   subCategories: SubCategory[];
-  onExerciseCreated: (exercise: StoredExercise) => void;
+  editingExercise: StoredExercise | null;
+  onExerciseSaved: (exercise: StoredExercise) => void;
   onSubCategoryCreated: (subCategory: SubCategory) => void;
+  onCancelEdit: () => void;
+  onSavingChange: (isSaving: boolean) => void;
 };
 
 type PendingAddition<T> = {
@@ -29,16 +33,22 @@ function ExerciseCreateForm({
   userId,
   exercises,
   subCategories,
-  onExerciseCreated,
+  editingExercise,
+  onExerciseSaved,
   onSubCategoryCreated,
+  onCancelEdit,
+  onSavingChange,
 }: ExerciseCreateFormProps) {
-  const [exerciseName, setExerciseName] = useState("");
+  // 親がkeyを切り替えるため、編集対象が変わると初期値から作り直される
+  const [exerciseName, setExerciseName] = useState(
+    editingExercise?.name ?? ""
+  );
   const [exerciseBodyPart, setExerciseBodyPart] =
-    useState<BodyPart>("chest");
+    useState<BodyPart>(editingExercise?.bodyPart ?? "chest");
   const [exerciseSubCategoryId, setExerciseSubCategoryId] =
-    useState("");
+    useState(editingExercise?.subCategoryId ?? "");
   const [exerciseUsesBodyWeight, setExerciseUsesBodyWeight] =
-    useState(false);
+    useState(editingExercise?.usesBodyWeight ?? false);
   const [exerciseError, setExerciseError] = useState("");
 
   const [subCategoryName, setSubCategoryName] = useState("");
@@ -48,7 +58,7 @@ function ExerciseCreateForm({
   const savingRef = useRef(false);
   const mountedRef = useRef(false);
 
-  // 同じ入力で再試行するときに、同じIDを使うための保管場所
+  // 同じ入力で追加を再試行するときに、同じIDを使う
   const pendingExerciseRef =
     useRef<PendingAddition<Exercise> | null>(null);
   const pendingSubCategoryRef =
@@ -76,6 +86,14 @@ function ExerciseCreateForm({
     setSubCategoryError("");
   }
 
+  function handleCancelEdit() {
+    if (savingRef.current) {
+      return;
+    }
+
+    onCancelEdit();
+  }
+
   async function handleSubmitExercise(
     e: FormEvent<HTMLFormElement>
   ) {
@@ -96,7 +114,14 @@ function ExerciseCreateForm({
       return;
     }
 
-    if (exercises.some((exercise) => exercise.name.trim() === name)) {
+    // 編集中の種目自身は、同名チェックの対象から除外する
+    if (
+      exercises.some(
+        (exercise) =>
+          exercise.id !== editingExercise?.id &&
+          exercise.name.trim() === name
+      )
+    ) {
       setExerciseError("同じ名前の種目が登録されています。");
       return;
     }
@@ -111,51 +136,81 @@ function ExerciseCreateForm({
       return;
     }
 
-    const signature = JSON.stringify([
+    const input = {
       name,
-      exerciseBodyPart,
+      bodyPart: exerciseBodyPart,
       subCategoryId,
-      exerciseUsesBodyWeight,
-    ]);
+      usesBodyWeight: exerciseUsesBodyWeight,
+    };
 
-    // 同じ内容の再送ならIDを維持し、内容が変わったら新しい操作とする
-    if (pendingExerciseRef.current?.signature !== signature) {
-      pendingExerciseRef.current = {
-        signature,
-        data: {
-          id: crypto.randomUUID(),
-          name,
-          bodyPart: exerciseBodyPart,
-          subCategoryId,
-          usesBodyWeight: exerciseUsesBodyWeight,
-        },
-      };
+    // 新規追加の場合だけ、再試行用のUUIDを用意する
+    if (editingExercise === null) {
+      const signature = JSON.stringify([
+        name,
+        exerciseBodyPart,
+        subCategoryId,
+        exerciseUsesBodyWeight,
+      ]);
+
+      if (pendingExerciseRef.current?.signature !== signature) {
+        pendingExerciseRef.current = {
+          signature,
+          data: {
+            id: crypto.randomUUID(),
+            ...input,
+          },
+        };
+      }
     }
-
-    const exerciseToSave = pendingExerciseRef.current.data;
 
     savingRef.current = true;
     setIsSaving(true);
+    onSavingChange(true);
 
     try {
-      const savedExercise = await createExercise(
-        exerciseToSave,
-        userId
-      );
+      let savedExercise: StoredExercise;
 
-      // ログアウトなどで画面が終了した後は、結果を画面へ反映しない
+      if (editingExercise !== null) {
+        // 編集開始時のIDとrevisionを使って更新する
+        savedExercise = await updateExercise(
+          {
+            id: editingExercise.id,
+            revision: editingExercise.revision,
+            ...input,
+          },
+          userId
+        );
+      } else {
+        const pendingExercise = pendingExerciseRef.current;
+
+        if (pendingExercise === null) {
+          throw new Error("保存する種目データが見つかりません。");
+        }
+
+        savedExercise = await createExercise(
+          pendingExercise.data,
+          userId
+        );
+      }
+
       if (!mountedRef.current) {
         return;
       }
 
-      onExerciseCreated(savedExercise);
       pendingExerciseRef.current = null;
-      resetExerciseForm();
+
+      if (editingExercise === null) {
+        resetExerciseForm();
+      }
+
+      // DBから正常な保存結果を受け取った場合だけ一覧へ反映する
+      onExerciseSaved(savedExercise);
     } catch (error) {
       if (!mountedRef.current) {
         return;
       }
 
+      // 入力内容はリセットせず、エラーだけ表示する
       setExerciseError(
         error instanceof Error
           ? error.message
@@ -166,6 +221,7 @@ function ExerciseCreateForm({
 
       if (mountedRef.current) {
         setIsSaving(false);
+        onSavingChange(false);
       }
     }
   }
@@ -214,6 +270,7 @@ function ExerciseCreateForm({
 
     savingRef.current = true;
     setIsSaving(true);
+    onSavingChange(true);
 
     try {
       const savedCategory = await createSubCategory(
@@ -228,7 +285,6 @@ function ExerciseCreateForm({
       onSubCategoryCreated(savedCategory);
       pendingSubCategoryRef.current = null;
 
-      // 追加した分類を選択し、種目の入力内容は残す
       setExerciseSubCategoryId(savedCategory.id);
       setSubCategoryName("");
     } catch (error) {
@@ -246,6 +302,7 @@ function ExerciseCreateForm({
 
       if (mountedRef.current) {
         setIsSaving(false);
+        onSavingChange(false);
       }
     }
   }
@@ -268,8 +325,8 @@ function ExerciseCreateForm({
       exerciseUsesBodyWeight={exerciseUsesBodyWeight}
       setExerciseUsesBodyWeight={setExerciseUsesBodyWeight}
       exerciseError={exerciseError}
-      editingExerciseId={null}
-      onResetExerciseForm={resetExerciseForm}
+      editingExerciseId={editingExercise?.id ?? null}
+      onResetExerciseForm={handleCancelEdit}
       isSaving={isSaving}
     />
   );
