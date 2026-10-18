@@ -241,3 +241,30 @@ export async function updateExercise(
 
     return parseExercise(data, userId);
 }
+
+// 種目を削除し、対象IDの削除完了を確認する
+export async function deleteExercise(
+  exercise: StoredExercise
+): Promise<void> {
+  const { data, error } = await supabase.rpc(
+    "delete_exercise",
+    {
+      p_id: exercise.id,
+      p_expected_revision: exercise.revision,
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (
+    !isObject(data) ||
+    data.id !== exercise.id ||
+    data.deleted !== true
+  ) {
+    throw new Error(
+      "削除結果を確認できませんでした。一覧を確認するか、再試行してください。"
+    );
+  }
+}

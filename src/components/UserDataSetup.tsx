@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import {
+  deleteExercise,
   loadExerciseData,
   type StoredExercise,
 } from "../lib/exerciseData";
@@ -42,10 +43,30 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
   });
   const [retryCount, setRetryCount] = useState(0);
 
-  // 編集開始時のデータを保持する。revisionもここに含まれる
   const [editingExercise, setEditingExercise] =
     useState<StoredExercise | null>(null);
   const [isFormSaving, setIsFormSaving] = useState(false);
+
+  const [deletingExerciseId, setDeletingExerciseId] =
+    useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+
+  // stateが画面へ反映される前の連続操作も防ぐ
+  const formSavingRef = useRef(false);
+  const deletingRef = useRef(false);
+
+  // ログアウトなどで画面が終了した後の結果反映を防ぐ
+  const mountedRef = useRef(false);
+
+  const isBusy = isFormSaving || deletingExerciseId !== null;
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -99,13 +120,17 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
     };
   }, [userId, retryCount]);
 
+  function handleFormSavingChange(isSaving: boolean) {
+    formSavingRef.current = isSaving;
+    setIsFormSaving(isSaving);
+  }
+
   function handleExerciseSaved(exercise: StoredExercise) {
     setSetupState((prev) => {
       if (prev.status !== "ready") {
         return prev;
       }
 
-      // 新規追加・編集のどちらも、同じIDを保存結果で置き換える
       const exercises = [
         ...prev.exercises.filter((item) => item.id !== exercise.id),
         exercise,
@@ -118,7 +143,8 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
     });
 
     setEditingExercise(null);
-    setIsFormSaving(false);
+    handleFormSavingChange(false);
+    setDeleteError("");
   }
 
   function handleSubCategoryCreated(subCategory: SubCategory) {
@@ -140,11 +166,14 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
   }
 
   function handleEditExercise(exercise: Exercise) {
-    if (isFormSaving || setupState.status !== "ready") {
+    if (
+      formSavingRef.current ||
+      deletingRef.current ||
+      setupState.status !== "ready"
+    ) {
       return;
     }
 
-    // 一覧のpropsはExercise型なので、revision付きの元データを探す
     const target = setupState.exercises.find(
       (item) => item.id === exercise.id
     );
@@ -153,25 +182,100 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
       return;
     }
 
-    // 同じ種目の編集ボタンを再度押しても入力をリセットしない
     if (editingExercise?.id === target.id) {
       return;
     }
 
+    setDeleteError("");
     setEditingExercise({ ...target });
   }
 
   function handleCancelEdit() {
-    if (isFormSaving) {
+    if (formSavingRef.current || deletingRef.current) {
       return;
     }
 
     setEditingExercise(null);
   }
 
+  async function handleDeleteExercise(id: string) {
+    if (
+      formSavingRef.current ||
+      deletingRef.current ||
+      setupState.status !== "ready"
+    ) {
+      return;
+    }
+
+    const target = setupState.exercises.find(
+      (exercise) => exercise.id === id
+    );
+
+    if (target === undefined) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `「${target.name}」を削除しますか？この操作は元に戻せません。`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    deletingRef.current = true;
+    setDeletingExerciseId(id);
+    setDeleteError("");
+
+    try {
+      await deleteExercise(target);
+
+      if (!mountedRef.current) {
+        return;
+      }
+
+      // 削除完了を確認した後にだけ、一覧から取り除く
+      setSetupState((prev) => {
+        if (prev.status !== "ready") {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          exercises: prev.exercises.filter(
+            (exercise) => exercise.id !== id
+          ),
+        };
+      });
+
+      // 編集中の種目を削除した場合は、追加フォームへ戻す
+      setEditingExercise((prev) =>
+        prev?.id === id ? null : prev
+      );
+    } catch (error) {
+      if (!mountedRef.current) {
+        return;
+      }
+
+      // 一覧や編集中の入力は残し、エラーだけ表示する
+      setDeleteError(
+        error instanceof Error
+          ? error.message
+          : "種目の削除に失敗しました。"
+      );
+    } finally {
+      deletingRef.current = false;
+
+      if (mountedRef.current) {
+        setDeletingExerciseId(null);
+      }
+    }
+  }
+
   function handleRetry() {
     setEditingExercise(null);
-    setIsFormSaving(false);
+    handleFormSavingChange(false);
+    setDeleteError("");
     setSetupState({ status: "loading" });
     setRetryCount((prev) => prev + 1);
   }
@@ -193,24 +297,40 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
 
   return (
     <section>
-      <ExerciseCreateForm
-        key={editingExercise?.id ?? "create"}
-        userId={userId}
-        exercises={setupState.exercises}
-        subCategories={setupState.subCategories}
-        editingExercise={editingExercise}
-        onExerciseSaved={handleExerciseSaved}
-        onSubCategoryCreated={handleSubCategoryCreated}
-        onCancelEdit={handleCancelEdit}
-        onSavingChange={setIsFormSaving}
-      />
+      {/* 削除中もフォームは残し、操作だけを止める */}
+      <fieldset
+        disabled={deletingExerciseId !== null}
+        style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+      >
+        <ExerciseCreateForm
+          key={editingExercise?.id ?? "create"}
+          userId={userId}
+          exercises={setupState.exercises}
+          subCategories={setupState.subCategories}
+          editingExercise={editingExercise}
+          onExerciseSaved={handleExerciseSaved}
+          onSubCategoryCreated={handleSubCategoryCreated}
+          onCancelEdit={handleCancelEdit}
+          onSavingChange={handleFormSavingChange}
+        />
+      </fieldset>
 
       <h2>種目一覧</h2>
       <p>種目：{setupState.exercises.length}件</p>
       <p>分類：{setupState.subCategories.length}件</p>
 
+      {deletingExerciseId !== null && (
+        <p role="status">種目を削除しています。</p>
+      )}
+
+      {deleteError !== "" && (
+        <p className="form-error" role="alert">
+          {deleteError}
+        </p>
+      )}
+
       <fieldset
-        disabled={isFormSaving}
+        disabled={isBusy}
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
       >
         <ExerciseList
@@ -219,6 +339,9 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
           bodyPartLabels={bodyPartLabels}
           subCategories={setupState.subCategories}
           onEditExercise={handleEditExercise}
+          onDeleteExercise={(id) => {
+            void handleDeleteExercise(id);
+          }}
         />
       </fieldset>
     </section>
