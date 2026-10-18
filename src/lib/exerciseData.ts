@@ -173,3 +173,47 @@ export async function loadExerciseData(userId: string): Promise<{
 
   return { exercises, subCategories };
 }
+
+// 分類を追加し、DBに保存されたデータを検証・変換して返す
+export async function createSubCategory(
+  subCategory: SubCategory,
+  userId: string
+): Promise<SubCategory> {
+  const { data, error } = await supabase.rpc(
+    "create_sub_category",
+    {
+      p_id: subCategory.id,
+      p_name: subCategory.name.trim(),
+      p_body_part: subCategory.bodyPart,
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return parseSubCategory(data, userId);
+}
+
+// 種目を追加し、DBに保存されたデータを検証・変換して返す
+export async function createExercise(
+  exercise: Exercise,
+  userId: string
+): Promise<StoredExercise> {
+  const { data, error } = await supabase.rpc(
+    "create_exercise",
+    {
+      p_id: exercise.id,
+      p_name: exercise.name.trim(),
+      p_body_part: exercise.bodyPart,
+      p_sub_category_id: exercise.subCategoryId,
+      p_uses_body_weight: exercise.usesBodyWeight,
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return parseExercise(data, userId);
+}
