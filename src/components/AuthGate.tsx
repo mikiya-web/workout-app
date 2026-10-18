@@ -3,6 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import AuthForm from "./AuthForm";
 import PasswordResetForm from "./PasswordResetForm";
+import UserDataSetup from "./UserDataSetup";
 
 type AuthState =
   | { status: "loading" }
@@ -173,6 +174,10 @@ function AuthGate() {
       ) : (
         <section>
           <p role="status">ログインしています。</p>
+          <UserDataSetup
+            key={authState.session.user.id}
+            userId={authState.session.user.id}
+          />
 
           <button
             type="button"
