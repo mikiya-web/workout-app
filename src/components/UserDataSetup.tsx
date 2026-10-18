@@ -12,7 +12,7 @@ import type {
 } from "../types/workout";
 import ExerciseList from "./ExerciseList";
 import ExerciseCreateForm from "./ExerciseCreateForm";
-import DailyBodyWeightForm from "./DailyBodyWeightForm";
+import RecordCreateForm from "./RecordCreateForm";
 
 type UserDataSetupProps = {
     userId: string;
@@ -298,7 +298,11 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
 
     return (
         <section>
-            <DailyBodyWeightForm key={userId} userId={userId} />
+            <RecordCreateForm
+                key={userId}
+                userId={userId}
+                exercises={setupState.exercises}
+            />
 
             {/* 削除中もフォームは残し、操作だけを止める */}
             <fieldset
