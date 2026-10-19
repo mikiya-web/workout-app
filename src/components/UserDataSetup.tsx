@@ -302,55 +302,57 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
                 key={userId}
                 userId={userId}
                 exercises={setupState.exercises}
-            />
-
-            {/* 削除中もフォームは残し、操作だけを止める */}
-            <fieldset
-                disabled={deletingExerciseId !== null}
-                style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+                isExerciseBusy={isBusy}
             >
-                <ExerciseCreateForm
-                    key={editingExercise?.id ?? "create"}
-                    userId={userId}
-                    exercises={setupState.exercises}
-                    subCategories={setupState.subCategories}
-                    editingExercise={editingExercise}
-                    onExerciseSaved={handleExerciseSaved}
-                    onSubCategoryCreated={handleSubCategoryCreated}
-                    onCancelEdit={handleCancelEdit}
-                    onSavingChange={handleFormSavingChange}
-                />
-            </fieldset>
 
-            <h2>種目一覧</h2>
-            <p>種目：{setupState.exercises.length}件</p>
-            <p>分類：{setupState.subCategories.length}件</p>
+                {/* 削除中もフォームは残し、操作だけを止める */}
+                <fieldset
+                    disabled={deletingExerciseId !== null}
+                    style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+                >
+                    <ExerciseCreateForm
+                        key={editingExercise?.id ?? "create"}
+                        userId={userId}
+                        exercises={setupState.exercises}
+                        subCategories={setupState.subCategories}
+                        editingExercise={editingExercise}
+                        onExerciseSaved={handleExerciseSaved}
+                        onSubCategoryCreated={handleSubCategoryCreated}
+                        onCancelEdit={handleCancelEdit}
+                        onSavingChange={handleFormSavingChange}
+                    />
+                </fieldset>
 
-            {deletingExerciseId !== null && (
-                <p role="status">種目を削除しています。</p>
-            )}
+                <h2>種目一覧</h2>
+                <p>種目：{setupState.exercises.length}件</p>
+                <p>分類：{setupState.subCategories.length}件</p>
 
-            {deleteError !== "" && (
-                <p className="form-error" role="alert">
-                    {deleteError}
-                </p>
-            )}
+                {deletingExerciseId !== null && (
+                    <p role="status">種目を削除しています。</p>
+                )}
 
-            <fieldset
-                disabled={isBusy}
-                style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
-            >
-                <ExerciseList
-                    exercises={setupState.exercises}
-                    filteredExercises={setupState.exercises}
-                    bodyPartLabels={bodyPartLabels}
-                    subCategories={setupState.subCategories}
-                    onEditExercise={handleEditExercise}
-                    onDeleteExercise={(id) => {
-                        void handleDeleteExercise(id);
-                    }}
-                />
-            </fieldset>
+                {deleteError !== "" && (
+                    <p className="form-error" role="alert">
+                        {deleteError}
+                    </p>
+                )}
+
+                <fieldset
+                    disabled={isBusy}
+                    style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
+                >
+                    <ExerciseList
+                        exercises={setupState.exercises}
+                        filteredExercises={setupState.exercises}
+                        bodyPartLabels={bodyPartLabels}
+                        subCategories={setupState.subCategories}
+                        onEditExercise={handleEditExercise}
+                        onDeleteExercise={(id) => {
+                            void handleDeleteExercise(id);
+                        }}
+                    />
+                </fieldset>
+            </RecordCreateForm>
         </section>
     );
 }
