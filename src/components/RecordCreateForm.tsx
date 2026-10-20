@@ -8,7 +8,12 @@ import {
   useLocation,
   useNavigate,
 } from "react-router";
-import type { WorkoutRecord } from "../types/workout";
+import { useState } from "react";
+import type {
+  BodyPart,
+  SubCategory,
+  WorkoutRecord,
+} from "../types/workout";
 import type { StoredExercise } from "../lib/exerciseData";
 import { useWorkoutRecords } from "../hooks/useWorkoutRecords";
 import RecordForm from "./RecordForm";
@@ -17,6 +22,7 @@ import RecordList from "./RecordList";
 type RecordCreateFormProps = {
   userId: string;
   exercises: StoredExercise[];
+  subCategories: SubCategory[];
   children: ReactNode;
   isExerciseBusy: boolean;
 };
@@ -24,12 +30,59 @@ type RecordCreateFormProps = {
 function RecordCreateForm({
   userId,
   exercises,
+  subCategories,
   children,
   isExerciseBusy,
 }: RecordCreateFormProps) {
   const workout = useWorkoutRecords({ userId, exercises });
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 画面を移動しても残しておく検索条件
+  const [recordSearchText, setRecordSearchText] = useState("");
+  const [recordFilterBodyPart, setRecordFilterBodyPart] =
+    useState<BodyPart | "all">("all");
+  const [recordFilterSubCategoryId, setRecordFilterSubCategoryId] =
+    useState("");
+  const [recordFilterDate, setRecordFilterDate] = useState("");
+
+  // 選択した部位に属する分類だけを候補にする
+  const recordFilterSubCategories = subCategories.filter(
+    (category) => category.bodyPart === recordFilterBodyPart
+  );
+
+  const normalizedSearchText = recordSearchText.trim().toLowerCase();
+
+  // 保存済みの記録は変更せず、表示する記録だけを絞り込む
+  const filteredRecords = workout.records.filter((record) => {
+    const exercise = exercises.find(
+      (item) => item.id === record.exerciseId
+    );
+
+    const matchesName =
+      normalizedSearchText === "" ||
+      (exercise?.name.toLowerCase().includes(normalizedSearchText) ??
+        false);
+
+    const matchesBodyPart =
+      recordFilterBodyPart === "all" ||
+      exercise?.bodyPart === recordFilterBodyPart;
+
+    const matchesSubCategory =
+      recordFilterSubCategoryId === "" ||
+      exercise?.subCategoryId === recordFilterSubCategoryId;
+
+    const matchesDate =
+      recordFilterDate === "" ||
+      record.date === recordFilterDate;
+
+    return (
+      matchesName &&
+      matchesBodyPart &&
+      matchesSubCategory &&
+      matchesDate
+    );
+  });
 
   const isBusy = workout.isSaving || isExerciseBusy;
   const isExercisePage = location.pathname === "/exercises";
@@ -150,7 +203,88 @@ function RecordCreateForm({
           element={
             <>
               <h2>記録一覧</h2>
-              <p>記録：{workout.records.length}件</p>
+              <p>
+                記録：{workout.records.length}件
+                （表示：{filteredRecords.length}件）
+              </p>
+
+              <div className="filter-panel record-filter-panel">
+                <label className="form-field">
+                  種目名で記録を検索
+                  <input
+                    type="text"
+                    value={recordSearchText}
+                    onChange={(event) =>
+                      setRecordSearchText(event.target.value)
+                    }
+                  />
+                </label>
+
+                <label className="form-field">
+                  部位で記録を絞り込み
+                  <select
+                    value={recordFilterBodyPart}
+                    onChange={(event) => {
+                      setRecordFilterBodyPart(
+                        event.target.value as BodyPart | "all"
+                      );
+
+                      // 別の部位の分類を条件に残さない
+                      setRecordFilterSubCategoryId("");
+                    }}
+                  >
+                    <option value="all">全部位</option>
+                    <option value="chest">胸</option>
+                    <option value="back">背中</option>
+                    <option value="shoulders">肩</option>
+                    <option value="biceps">上腕二頭筋</option>
+                    <option value="triceps">上腕三頭筋</option>
+                    <option value="legs">脚</option>
+                    <option value="abs">腹</option>
+                    <option value="other">その他</option>
+                  </select>
+                </label>
+
+                <label className="form-field">
+                  分類で記録を絞り込み
+                  <select
+                    value={recordFilterSubCategoryId}
+                    onChange={(event) =>
+                      setRecordFilterSubCategoryId(event.target.value)
+                    }
+                    disabled={recordFilterBodyPart === "all"}
+                  >
+                    <option value="">すべての分類</option>
+
+                    {recordFilterSubCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-field">
+                  日付で絞り込み
+                  <input
+                    type="date"
+                    value={recordFilterDate}
+                    onChange={(event) =>
+                      setRecordFilterDate(event.target.value)
+                    }
+                  />
+                </label>
+
+                <div className="form-actions record-filter-actions">
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => setRecordFilterDate("")}
+                  >
+                    日付の絞り込みを解除
+                  </button>
+                </div>
+              </div>
 
               <fieldset
                 disabled={isBusy}
@@ -163,7 +297,7 @@ function RecordCreateForm({
               >
                 <RecordList
                   records={workout.records}
-                  filteredRecords={workout.records}
+                  filteredRecords={filteredRecords}
                   exercises={exercises}
                   dailyInfos={workout.dailyInfos}
                   onEditRecord={handleEditRecord}
