@@ -44,6 +44,10 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
     });
     const [retryCount, setRetryCount] = useState(0);
 
+    const [exerciseSearchText, setExerciseSearchText] = useState("");
+    const [exerciseFilterBodyPart, setExerciseFilterBodyPart] =
+        useState<BodyPart | "all">("all");
+
     const [editingExercise, setEditingExercise] =
         useState<StoredExercise | null>(null);
     const [isFormSaving, setIsFormSaving] = useState(false);
@@ -296,12 +300,28 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
         );
     }
 
+    const normalizedExerciseSearchText =
+        exerciseSearchText.trim().toLowerCase();
+
+    const filteredExercises = setupState.exercises.filter((exercise) => {
+        const matchesName = exercise.name
+            .toLowerCase()
+            .includes(normalizedExerciseSearchText);
+
+        const matchesBodyPart =
+            exerciseFilterBodyPart === "all" ||
+            exercise.bodyPart === exerciseFilterBodyPart;
+
+        return matchesName && matchesBodyPart;
+    });
+
     return (
         <section>
             <RecordCreateForm
                 key={userId}
                 userId={userId}
                 exercises={setupState.exercises}
+                subCategories={setupState.subCategories}
                 isExerciseBusy={isBusy}
             >
 
@@ -324,8 +344,46 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
                 </fieldset>
 
                 <h2>種目一覧</h2>
-                <p>種目：{setupState.exercises.length}件</p>
+                <p>
+                    種目：{setupState.exercises.length}件
+                    （表示：{filteredExercises.length}件）
+                </p>
                 <p>分類：{setupState.subCategories.length}件</p>
+
+                <div className="filter-panel">
+                    <label className="form-field">
+                        種目名で検索
+                        <input
+                            type="text"
+                            value={exerciseSearchText}
+                            onChange={(event) =>
+                                setExerciseSearchText(event.target.value)
+                            }
+                        />
+                    </label>
+
+                    <label className="form-field">
+                        部位で絞り込み
+                        <select
+                            value={exerciseFilterBodyPart}
+                            onChange={(event) =>
+                                setExerciseFilterBodyPart(
+                                    event.target.value as BodyPart | "all"
+                                )
+                            }
+                        >
+                            <option value="all">全部位</option>
+                            <option value="chest">胸</option>
+                            <option value="back">背中</option>
+                            <option value="shoulders">肩</option>
+                            <option value="biceps">上腕二頭筋</option>
+                            <option value="triceps">上腕三頭筋</option>
+                            <option value="legs">脚</option>
+                            <option value="abs">腹</option>
+                            <option value="other">その他</option>
+                        </select>
+                    </label>
+                </div>
 
                 {deletingExerciseId !== null && (
                     <p role="status">種目を削除しています。</p>
@@ -343,7 +401,7 @@ function UserDataSetup({ userId }: UserDataSetupProps) {
                 >
                     <ExerciseList
                         exercises={setupState.exercises}
-                        filteredExercises={setupState.exercises}
+                        filteredExercises={filteredExercises}
                         bodyPartLabels={bodyPartLabels}
                         subCategories={setupState.subCategories}
                         onEditExercise={handleEditExercise}
