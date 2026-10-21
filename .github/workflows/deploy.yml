@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   deploy:
+    # 手動実行を含め、main以外では公開処理を実行しない
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     environment:
@@ -45,8 +47,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # 型チェックと公開用ファイルの生成
+      # Supabaseの接続設定を渡し、型チェックと公開用ファイルを生成する
       - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
       # GitHub Pagesを準備する
